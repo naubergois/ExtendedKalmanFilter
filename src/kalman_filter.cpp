@@ -71,39 +71,36 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 
   float rho = sqrt(px*px + py*py);
   float phi = atan2(py, px);
-  float rho_dot;
+  float rho_dot=0;
 
-  if (rho>0){
+  if (fabs(rho)>0.0001){
+      
        rho_dot = (px*vx + py*vy)/rho;     
-
+ 
+  }else{
+        rho_dot =0;
   }
 
   cout << "EKF: rhodot checked " << endl;
   
   VectorXd h = VectorXd(3);
-  h << rho,
-       phi,
-       rho_dot;
+  h << rho,phi,rho_dot;
 
 
   
   VectorXd y = z - h;
 
 
-  if(y[1]>M_PI){
-	y[1]-=2*M_PI;
-  }
-  if(y[1]<-M_PI){
-        y[1]+=2*M_PI;
-  }
+  for (; y(1) < -M_PI; y(1) += 2*M_PI) {}
+  for (; y(1) > M_PI;  y(1) -= 2*M_PI) {}
   cout << "EKF: y checked " << endl;
-  MatrixXd H_j = tools.CalculateJacobian(x_);
+  
 
-  MatrixXd Ht = H_j.transpose();
+  MatrixXd Ht = H_.transpose();
 
 
   cout << "EKF: Ht checked " << endl;
-  MatrixXd S = H_j * P_ * Ht + R_;
+  MatrixXd S = H_ * P_ * Ht + R_;
 
   cout << "EKF: S checked " << endl;  MatrixXd Si = S.inverse();
   MatrixXd PHt = P_ * Ht;
@@ -114,7 +111,7 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   long x_size = x_.size();
   cout << "EKF: size checked " << endl;
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
-  P_ = (I - K * H_j) * P_;
+  P_ = (I - K * H_) * P_;
 
   cout << "EKF: P checked " << endl;
 
